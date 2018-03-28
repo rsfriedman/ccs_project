@@ -1,2 +1,6 @@
-# ccs_project
-Git repo for JHU EN.605.731 CCS project
+# JHU EN.605.731 CCS project
+
+## how to run:
+1) Run `python server.py`
+
+2) Once Server has started: `python client.py`
