@@ -6,7 +6,7 @@
 import socket
 
 # create a socket object
-serversocket = socket.socket(
+serverSocket = socket.socket(
     socket.AF_INET, socket.SOCK_STREAM)
 
 # get local machine name
@@ -15,17 +15,28 @@ host = socket.gethostname()
 port = 9999
 
 # bind to the port
-serversocket.bind((host, port))
+serverSocket.bind((host, port))
 
 # queue up to 5 requests
-serversocket.listen(5)
+serverSocket.listen(5)
+print("Server listening...")
 
 while True:
     # establish a connection
-    clientsocket, addr = serversocket.accept()
-
+    clientSocket, addr = serverSocket.accept()
     print("Got a connection from %s" % str(addr))
 
-    msg = 'Thank you for connecting' + "\r\n"
-    clientsocket.send(msg.encode('ascii'))
-    clientsocket.close()
+    #transfer file (download)
+    filename = 'test.txt'
+    file = open(filename, 'rb')
+    file_line = file.read(1024)
+    while (file_line):
+        clientSocket.send(file_line)
+        print('Sent ', file_line)
+        file_line = file.read(1024)
+        msg = "\r\n" + 'Thank you for connecting' + "\r\n"
+        clientSocket.send(msg.encode('ascii'))
+    file.close()
+    clientSocket.close()
+
+#todo server recieves file from client
