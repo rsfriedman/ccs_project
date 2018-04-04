@@ -47,13 +47,13 @@ class ChallengeFileClaimResponse(BasePacket):
 
     PacketId = 3
 
-    def __init__(self, file_hash, file_portion_id, file_portion_hash):
+    def __init__(self, file_hash, file_portion_id, file_portion_signature):
 
         BasePacket.__init__(self, self.PacketId)
 
         self.file_hash = file_hash
         self.file_portion_id = file_portion_id
-        self.file_portion_hash = file_portion_hash
+        self.file_portion_signature = file_portion_signature
 
 # Packet sent by the server to notify that the client
 #   that it is either accepting or rejecting its

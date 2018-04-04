@@ -47,7 +47,7 @@ class ServerCommandHandler(socketserver.BaseRequestHandler):
 
                         # Validate that the file portion signature supplied by the client is equal to
                         #   the file portion signature we have on record
-                        if receivedPacket.file_portion_hash != pow_object.get_file_port_pow_signature(ii):
+                        if receivedPacket.file_portion_signature != pow_object.get_file_portion_pow_signature(ii):
                             print('Challenge failed')
                             clientPassedChallenge = False
                         else:
