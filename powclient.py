@@ -55,8 +55,8 @@ if __name__ == "__main__":
             while receivedPacket.packet_id == ChallengeFileClaimRequest.PacketId:
 
                 # Provide the signature for the portion of the file being challenged
-                response_hash = test_pow.get_file_port_pow_signature(receivedPacket.file_portion_id)
-                cfcp = ChallengeFileClaimResponse(receivedPacket.file_hash, receivedPacket.file_portion_id, response_hash)
+                response_signature = test_pow.get_file_portion_pow_signature(receivedPacket.file_portion_id)
+                cfcp = ChallengeFileClaimResponse(receivedPacket.file_hash, receivedPacket.file_portion_id, response_signature)
                 sendPowPacket(sock, cfcp)
 
                 # Get the next request from the server

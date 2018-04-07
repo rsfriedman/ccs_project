@@ -4,7 +4,7 @@ import hashlib
 #
 #   The following methods are required:
 #       get_file_portion_bytes(self, portion_id)
-#       get_file_port_pow_signature(self, portion_id)
+#       get_file_portion_pow_signature(self, portion_id)
 #       get_file_portion_hash(self, portion_id)
 #       get_num_portions(self)
 #       num_challenge_portions(self)
@@ -43,7 +43,7 @@ class example_pow:
         return self.file_portion_dictionary[portion_id]
 
     # Return the POW signature for the requested portion of the file
-    def get_file_port_pow_signature(self, portion_id):
+    def get_file_portion_pow_signature(self, portion_id):
         m = hashlib.sha256()
         m.update(self.file_portion_dictionary[portion_id])
 
