@@ -3,19 +3,39 @@ import socket
 from pow_packets import *
 from example_pow import *
 
+from pow_merkle_tree import *
+
+def pow_factory_method(pow_string, local_file_path):
+    if pow_string == "merkletree":
+        return pow_merkle_tree(local_file_path)
+    #elif pow_string == "spow":
+        #return spow_implementation(local_file_path)
+    #elif pow_string == "bloomfilter":
+        #return pow_bloomfilter_implementation(local_file_path)
+    else:
+        print("Error: Unknown POW factory string")
+        return None
+
 if __name__ == "__main__":
+
+    mt = pow_merkle_tree('C:/Projects/ccs_project/flamingo.jpg')
+    mt.get_file_portion_pow_signature(10)
 
     parser = argparse.ArgumentParser(description='POW client')
     parser.add_argument('-ip', '--ip', help='IP address for the server', required=True)
     parser.add_argument('-port', '--port', help='IP port for the server', required=True)
     parser.add_argument('-action', '--action', help='The command to perform', choices=['upload', 'download'], required=True)
+    parser.add_argument('-pow_type', '--pow_type', help='The type of POW to use', choices=['merkletree', 'spow', 'bloomfilter'],
+                        required=True)
 
     args = vars(parser.parse_args())
 
     port = int(args['port'])
     ip_address = args['ip']
+    pow_type = args['pow_type']
     print(port)
     print(ip_address)
+    print(pow_type)
 
     # Socket setup
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -28,7 +48,7 @@ if __name__ == "__main__":
         if args['action'] == 'upload':
 
             # First, compute the POW data structure for the file
-            test_pow = example_pow('flamingo.jpg')
+            test_pow = pow_factory_method(pow_type, 'flamingo.jpg')
 
             # Tell the server that you're asserting claim on a file
             afcp = AssertFileClaimPacket('flamingo.jpg', test_pow.whole_file_hash)

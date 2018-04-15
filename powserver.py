@@ -2,9 +2,22 @@ import argparse
 import socketserver
 from pow_packets import *
 from example_pow import *
+from pow_merkle_tree import *
+
+def pow_factory_method(pow_string, local_file_path):
+    if pow_string == "merkletree":
+        return pow_merkle_tree(local_file_path)
+    #elif pow_string == "spow":
+        #return spow_implementation(local_file_path)
+    #elif pow_string == "bloomfilter":
+        #return pow_bloomfilter_implementation(local_file_path)
+    else:
+        print("Error: Unknown POW factory string")
+        return None
 
 # Dictionary that contains all of the files we've gotten so far
 serverFiles = dict()
+pow_type = None
 
 class ServerCommandHandler(socketserver.BaseRequestHandler):
 
@@ -78,7 +91,7 @@ class ServerCommandHandler(socketserver.BaseRequestHandler):
                 with open(local_file_path, "wb") as f:
                     bytes = f.write(total_file_bytes)
 
-                pow_data = example_pow(local_file_path)
+                pow_data = pow_factory_method(pow_type, local_file_path)
 
                 serverFiles[assertClaimPacket.file_hash] = dict()
                 # @todo Different clients may call the same file by a different name.  Need to manage that.
@@ -92,13 +105,18 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='POW client')
     parser.add_argument('-ip', '--ip', help='IP address for the server', required=True)
     parser.add_argument('-port', '--port', help='IP port for the server', required=True)
+    parser.add_argument('-pow_type', '--pow_type', help='The type of POW to use',
+                        choices=['merkletree', 'spow', 'bloomfilter'],
+                        required=True)
 
     args = vars(parser.parse_args())
 
     port = int(args['port'])
     ip_address = args['ip']
+    pow_type = args['pow_type']
     print(port)
     print(ip_address)
+    print(pow_type)
 
     server = socketserver.TCPServer((ip_address, port), ServerCommandHandler)
 
