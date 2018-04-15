@@ -1,6 +1,6 @@
 import argparse
 import socket
-import hashlib
+import random
 from pow_packets import *
 from sPOW import *
 
@@ -28,110 +28,102 @@ if __name__ == "__main__":
         # File upload sequence
         if args['action'] == 'upload':
 
-            # First, compute the POW data structure for the file
+            # First, compute the sPOW data structure for the file
             sPOW = sPOW('/Users/YoDex/PycharmProjects/ccs_project/flamingo.jpg')
 
-            with open(sPOW.file_pointer, 'rb') as f:
-                data = f.read()
-            sha256 = hashlib.sha256()
-            sha256.update(data)
-            sPOW_file_hash = sha256.digest()
-
             # Tell the server that you're asserting claim on a file
-            afcp = AssertFileClaimPacket('flamingo.jpg', sPOW_file_hash)
+            afcp = AssertFileClaimPacket('flamingo.jpg', sPOW.whole_file_hash)
             sendPowPacket(sock, afcp)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-            # Wait for the server's response.
-            #
-            #   If the server doesn't have a file with the given hash, it will
-            #       immediately send a ChallengeFileClaimAccepted packet and request upload.
-            #
-            #   If the server does have a file with the given hash, it will
-            #       issue ChallengeFileClaimRequest packets to request that the
-            #       client prove ownership
             receivedPacket = receivePowPacket(sock)
+            if receivedPacket.file_needs_upload:
+                print('Uploading packet')
 
-            # Perform a sanity check that the server and the client
-            #   are talking about the same file
-            if receivedPacket.file_hash != afcp.file_hash:
-                print('Error: mismatched file hashes sanity check')
+                ii = 1
+                while ii <= sPOW.get_num_portions():
+                    ufpr = UploadFilePortionRequest(sPOW.whole_file_hash,
+                                                    ii,
+                                                    sPOW.get_file_portion_hash(ii),
+                                                    sPOW.get_file_portion_bytes(ii))
+                    sendPowPacket(sock, ufpr)
 
-            # Enter into the "challenge" loop, where the server will
-            #   challenge the client to provide the correct file
-            #   portion signatures
-            while receivedPacket.packet_id == ChallengeFileClaimRequest.PacketId:
+                    receivedPacket = receivePowPacket(sock)
 
-                # Provide the signature for the portion of the file being challenged
-                response_hash = test_pow.get_file_port_pow_signature(receivedPacket.file_portion_id)
-                cfcp = ChallengeFileClaimResponse(receivedPacket.file_hash, receivedPacket.file_portion_id, response_hash)
-                sendPowPacket(sock, cfcp)
+                    if receivedPacket.packet_id == UploadFilePortionReceive.PacketId:
+                        # Validate that the chunk was received correctly.  If it wasn't,
+                        #   then we need to resend it, so don't increment ii
+                        if receivedPacket.receive_success:
+                            ii = ii + 1
+                    else:
+                        print('Error: expected portion receive packet')
 
-                # Get the next request from the server
+                ufc = UploadFileComplete(sPOW.whole_file_hash)
+                sendPowPacket(sock, ufc)
+                print('File upload complete')
+
+                receivedPacket = receivePowPacket(sock)
+                print("Verifying file ownership to server.")
+                with open(sPOW.file_pointer, 'rb') as f:
+                    data = f.read()
+                f.close()
+                file_size = len(data)
+                print('filesize: ' + str(file_size))
+                random.seed(receivedPacket.seed)
+                bits = ""
+                for y in range(0, 4):
+                    file_position = random.randrange(0, file_size)
+                    (q, r) = divmod(file_position, 8)
+                    bit = (data[q] >> r) & 1
+                    bits = bits + str(bit)
+                print(receivedPacket.seed)
+                print(bits)
+                print("Sending challenge resposne to server.")
+                spow_cfcr = sPOW_ChallengeFileClaimResponse(sPOW.whole_file_hash, bits)
+                sendPowPacket(sock, spow_cfcr)
+
                 receivedPacket = receivePowPacket(sock)
 
-            if receivedPacket.packet_id == ChallengeFileClaimAccepted.PacketId:
-
-                # Check that the claim was accepted
-                if receivedPacket.claim_accepted:
-                    print('File claim accepted')
-
-                    # If the server doesn't have a copy of this file, then upload it,
-                    #   otherwise, we're done here
-                    if receivedPacket.file_needs_upload:
-                        print('Uploading packet')
-
-                        ii = 1
-                        while ii <= test_pow.get_num_portions():
-                            ufpr = UploadFilePortionRequest(test_pow.whole_file_hash,
-                                                            ii,
-                                                            test_pow.get_file_portion_hash(ii),
-                                                            test_pow.get_file_portion_bytes(ii))
-                            sendPowPacket(sock, ufpr)
-
-                            receivedPacket = receivePowPacket(sock)
-
-                            if receivedPacket.packet_id == UploadFilePortionReceive.PacketId:
-                                # Validate that the chunk was received correctly.  If it wasn't,
-                                #   then we need to resend it, so don't increment ii
-                                if receivedPacket.receive_success:
-                                    ii = ii + 1
-                            else:
-                                print('Error: expected portion receive packet')
-
-                        ufc = UploadFileComplete(test_pow.whole_file_hash)
-                        sendPowPacket(sock, ufc)
-                        print('File upload complete')
-
+                if receivedPacket.packet_id == ChallengeFileClaimAccepted.PacketId:
+                    if receivedPacket.claim_accepted == True:
+                        print("File owernship proven!")
                     else:
-                        print('Server already has the file, upload not needed')
+                        print("File ownership challenge failed")
 
+            if receivedPacket.packet_id == sPOW_ChallengeFileClaimRequest.PacketId:
+                print("Server already has file, but needs to verify ownership")
+                print("Verifying file ownership to server.")
+                with open(sPOW.file_pointer, 'rb') as f:
+                    data = f.read()
+                f.close()
+                file_size = len(data)
+                print('filesize: ' + str(file_size))
+                random.seed(receivedPacket.seed)
+                bits = ""
+                for y in range(0, 4):
+                    file_position = random.randrange(0, file_size)
+                    (q, r) = divmod(file_position, 8)
+                    bit = (data[q] >> r) & 1
+                    bits = bits + str(bit)
+                print("Sending challenge resposne to server.")
+                spow_cfcr = sPOW_ChallengeFileClaimResponse(sPOW.whole_file_hash, bits)
+                sendPowPacket(sock, spow_cfcr)
+
+                receivedPacket = receivedPacket(sock)
+
+                if receivedPacket.packet_id == ChallengeFileClaimAccepted.PacketId:
+                    print("File owernship proven!")
                 else:
-                    print('File claim rejected, not the owner of the file')
-
-            else:
-                print('Error: expected claim accepted packet')
-
-        elif args['action'] == 'download':
-
-            print('Download action not currently supported')
-
+                    print("File ownership challenge failed")
     finally:
         sock.close()
+
+def challenge_response(seed, file):
+    file_size = len(data)
+    random.seed(seed)
+    bits = ""
+    for y in range(0, 4):
+        file_position = random.randrange(0, file_size)
+        (q, r) = divmod(file_position, 8)
+        bit = (file[q] >> r) & 1
+        bits = bits + str(bit)
+    return bits
