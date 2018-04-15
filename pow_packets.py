@@ -114,6 +114,28 @@ class UploadFileComplete(BasePacket):
         BasePacket.__init__(self, self.PacketId)
 
         self.file_hash = file_hash
+        
+class sPOW_ChallengeFileClaimRequest(BasePacket):
+
+    PacketId = 8
+
+    def __init__(self, file_hash, seed):
+
+        BasePacket.__init__(self, self.PacketId)
+
+        self.file_hash = file_hash
+        self.seed = seed
+
+class sPOW_ChallengeFileClaimResponse(BasePacket):
+
+    PacketId = 9
+
+    def __init__(self, file_hash, bits):
+
+        BasePacket.__init__(self, self.PacketId)
+
+        self.file_hash = file_hash
+        self.bits = bits
 
 # Receives a specific length of bytes from a socket
 def recv_by_length(sock, num_bytes):
