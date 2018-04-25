@@ -7,8 +7,8 @@ from pow_merkle_tree import *
 def pow_factory_method(pow_string, local_file_path):
     if pow_string == "merkletree":
         return pow_merkle_tree(local_file_path)
-    #elif pow_string == "spow":
-        #return spow_implementation(local_file_path)
+    elif pow_string == "spow":
+        return spow_implementation(local_file_path, True)
     #elif pow_string == "bloomfilter":
         #return pow_bloomfilter_implementation(local_file_path)
     else:
@@ -47,26 +47,44 @@ class ServerCommandHandler(socketserver.BaseRequestHandler):
                 # If we already have the file, then challenge the client to prove ownership
                 currentFileDict = serverFiles[receivedPacket.file_hash]
                 pow_object = currentFileDict['pow_object']
-
-                # Send a challenge packet for each of the portions the POW scheme will challenge
-                for ii in range(1, pow_object.num_challenge_portions()):
-
-                    # Request the file signature of portion 'ii' of the file
-                    cfcp = ChallengeFileClaimRequest(assertClaimPacket.file_hash, ii)
+                
+                if pow_type == 'spow':
+                    if pow_object.num_challenges_computed - pow_object.num_challenges_used == 0:
+                        pow_object.computeChallenges()
+                    cfcp = ChallengeFileClaimRequest(assertClaimPacket.file_hash, None, pow_object.seeds[pow_object.num_challenges_used])
                     sendPowPacket(self.request, cfcp)
 
                     receivedPacket = receivePowPacket(self.request)
                     if receivedPacket.packet_id == ChallengeFileClaimResponse.PacketId:
-
-                        # Validate that the file portion signature supplied by the client is equal to
-                        #   the file portion signature we have on record
-                        if receivedPacket.file_portion_signature != pow_object.get_file_portion_pow_signature(ii):
-                            print('Challenge failed')
-                            clientPassedChallenge = False
+                        if receivedPacket.bits == pow_object.challenges[pow_object.num_challenges_used]:
+                            print("Challenge Accepted")
+                            clientPassedChallenge = True
                         else:
-                            print('Challenge portion accepted')
+                            print("Challenge Failed")
+                            clientPassedChallenge = False
+                        pow_object.num_challenges_used += 1
                     else:
                         print('Error: Expected challenge file claim response here')
+                else:
+                    # Send a challenge packet for each of the portions the POW scheme will challenge
+                    for ii in range(1, pow_object.num_challenge_portions()):
+
+                        # Request the file signature of portion 'ii' of the file
+                        cfcp = ChallengeFileClaimRequest(assertClaimPacket.file_hash, ii, None)
+                        sendPowPacket(self.request, cfcp)
+
+                        receivedPacket = receivePowPacket(self.request)
+                        if receivedPacket.packet_id == ChallengeFileClaimResponse.PacketId:
+
+                            # Validate that the file portion signature supplied by the client is equal to
+                            #   the file portion signature we have on record
+                            if receivedPacket.file_portion_signature != pow_object.get_file_portion_pow_signature(ii):
+                                print('Challenge failed')
+                                clientPassedChallenge = False
+                            else:
+                                print('Challenge portion accepted')
+                        else:
+                            print('Error: Expected challenge file claim response here')
 
             # Inform the client that the challenge was accepted or rejected
             cfca = ChallengeFileClaimAccepted(receivedPacket.file_hash, clientPassedChallenge, not haveFileAlready)
