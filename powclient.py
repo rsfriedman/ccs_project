@@ -8,8 +8,8 @@ from pow_merkle_tree import *
 def pow_factory_method(pow_string, local_file_path):
     if pow_string == "merkletree":
         return pow_merkle_tree(local_file_path)
-    #elif pow_string == "spow":
-        #return spow_implementation(local_file_path)
+    elif pow_string == "spow":
+        return spow_implementation(local_file_path, False)
     #elif pow_string == "bloomfilter":
         #return pow_bloomfilter_implementation(local_file_path)
     else:
@@ -74,10 +74,16 @@ if __name__ == "__main__":
             #   portion signatures
             while receivedPacket.packet_id == ChallengeFileClaimRequest.PacketId:
 
-                # Provide the signature for the portion of the file being challenged
-                response_signature = test_pow.get_file_portion_pow_signature(receivedPacket.file_portion_id)
-                cfcp = ChallengeFileClaimResponse(receivedPacket.file_hash, receivedPacket.file_portion_id, response_signature)
-                sendPowPacket(sock, cfcp)
+                if pow_type == "spow":
+                    bits = test_pow.computeResponse(receivedPacket.seed)
+                    print("Client Bit Count: " + str(len(bits)))
+                    cfcr = ChallengeFileClaimResponse(test_pow.whole_file_hash, None, None, bits)
+                else:
+                    # Provide the signature for the portion of the file being challenged
+                    response_signature = test_pow.get_file_portion_pow_signature(receivedPacket.file_portion_id)
+                    cfcr = ChallengeFileClaimResponse(receivedPacket.file_hash, receivedPacket.file_portion_id, response_signature, None)
+
+                sendPowPacket(sock, cfcr)
 
                 # Get the next request from the server
                 receivedPacket = receivePowPacket(sock)
