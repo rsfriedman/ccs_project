@@ -33,12 +33,13 @@ class ChallengeFileClaimRequest(BasePacket):
 
     PacketId = 2
 
-    def __init__(self, file_hash, file_portion_id):
+    def __init__(self, file_hash, file_portion_id, seed):
 
         BasePacket.__init__(self, self.PacketId)
 
         self.file_hash = file_hash
         self.file_portion_id = file_portion_id
+        self.seed = seed
 
 # Packet that the client responds with to prove
 #   that it knows the POW signature of a portion
@@ -47,13 +48,14 @@ class ChallengeFileClaimResponse(BasePacket):
 
     PacketId = 3
 
-    def __init__(self, file_hash, file_portion_id, file_portion_signature):
+    def __init__(self, file_hash, file_portion_id, file_portion_signature, bits):
 
         BasePacket.__init__(self, self.PacketId)
 
         self.file_hash = file_hash
         self.file_portion_id = file_portion_id
         self.file_portion_signature = file_portion_signature
+        self.bits = bits
 
 # Packet sent by the server to notify that the client
 #   that it is either accepting or rejecting its
