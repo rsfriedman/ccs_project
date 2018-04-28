@@ -10,8 +10,6 @@ def pow_factory_method(pow_string, local_file_path):
         return pow_merkle_tree(local_file_path)
     elif pow_string == "spow":
         return spow_implementation(local_file_path, False)
-    #elif pow_string == "bloomfilter":
-        #return pow_bloomfilter_implementation(local_file_path)
     else:
         print("Error: Unknown POW factory string")
         return None
@@ -31,9 +29,9 @@ if __name__ == "__main__":
     port = int(args['port'])
     ip_address = args['ip']
     pow_type = args['pow_type']
-    print(port)
-    print(ip_address)
-    print(pow_type)
+    print("Port #: " + str(port))
+    print("IP Address: " + ip_address)
+    print("Algorithm Run Type: " + pow_type.upper())
 
     if pow_type == 'merkletree':
         mt = pow_merkle_tree('/Users/YoDex/PycharmProjects/FileReputation/flamingo.jpg')
@@ -48,6 +46,9 @@ if __name__ == "__main__":
 
         # File upload sequence
         if args['action'] == 'upload':
+
+            #Timer Start
+            general_timer_start = time.process_time()
 
             # First, compute the POW data structure for the file
             test_pow = pow_factory_method(pow_type, '/Users/YoDex/PycharmProjects/FileReputation/flamingo.jpg')
@@ -95,6 +96,10 @@ if __name__ == "__main__":
                 # Check that the claim was accepted
                 if receivedPacket.claim_accepted:
                     print('File claim accepted')
+                    general_timer_end = time.process_time()
+                    run_time = str((general_timer_end - general_timer_start) * 1000000)
+                    print(pow_type.upper() + " Algorithm Run Time: " + run_time + " microseconds")
+
 
                     # If the server doesn't have a copy of this file, then upload it,
                     #   otherwise, we're done here

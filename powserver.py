@@ -10,8 +10,6 @@ def pow_factory_method(pow_string, local_file_path):
         return pow_merkle_tree(local_file_path)
     elif pow_string == "spow":
         return spow_implementation(local_file_path, True)
-    #elif pow_string == "bloomfilter":
-        #return pow_bloomfilter_implementation(local_file_path)
     else:
         print("Error: Unknown POW factory string")
         return None
@@ -134,9 +132,9 @@ if __name__ == "__main__":
     port = int(args['port'])
     ip_address = args['ip']
     pow_type = args['pow_type']
-    print(port)
-    print(ip_address)
-    print(pow_type)
+    print("Port #: " + str(port))
+    print("IP Address: " + ip_address)
+    print("Algorithm Run Type: " + pow_type.upper())
 
     server = socketserver.TCPServer((ip_address, port), ServerCommandHandler)
 
