@@ -18,7 +18,7 @@ def pow_factory_method(pow_string, local_file_path):
 
 if __name__ == "__main__":
 
-    mt = pow_merkle_tree('C:/Projects/ccs_project/flamingo.jpg')
+    mt = pow_merkle_tree('/Users/YoDex/PycharmProjects/FileReputation/flamingo.jpg')
     mt.get_file_portion_pow_signature(10)
 
     parser = argparse.ArgumentParser(description='POW client')
@@ -48,7 +48,7 @@ if __name__ == "__main__":
         if args['action'] == 'upload':
 
             # First, compute the POW data structure for the file
-            test_pow = pow_factory_method(pow_type, 'flamingo.jpg')
+            test_pow = pow_factory_method(pow_type, '/Users/YoDex/PycharmProjects/FileReputation/flamingo.jpg')
 
             # Tell the server that you're asserting claim on a file
             afcp = AssertFileClaimPacket('flamingo.jpg', test_pow.whole_file_hash)

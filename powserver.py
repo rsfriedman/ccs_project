@@ -52,6 +52,7 @@ class ServerCommandHandler(socketserver.BaseRequestHandler):
                 if pow_type == 'spow':
                     if pow_object.num_challenges_computed - pow_object.num_challenges_used == 0:
                         pow_object.computeChallenges()
+                    print("Server Bit Count: " + str(len(pow_object.challenges[pow_object.num_challenges_used])))
                     cfcp = ChallengeFileClaimRequest(assertClaimPacket.file_hash, None, pow_object.seeds[pow_object.num_challenges_used])
                     sendPowPacket(self.request, cfcp)
 
