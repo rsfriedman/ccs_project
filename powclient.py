@@ -2,7 +2,7 @@ import argparse
 import socket
 from pow_packets import *
 from example_pow import *
-
+from spow_implementation import *
 from pow_merkle_tree import *
 
 def pow_factory_method(pow_string, local_file_path):
