@@ -1,7 +1,7 @@
 import argparse
 import socket
+import time
 from pow_packets import *
-from example_pow import *
 from spow_implementation import *
 from pow_merkle_tree import *
 
@@ -18,8 +18,6 @@ def pow_factory_method(pow_string, local_file_path):
 
 if __name__ == "__main__":
 
-    mt = pow_merkle_tree('/Users/YoDex/PycharmProjects/FileReputation/flamingo.jpg')
-    mt.get_file_portion_pow_signature(10)
 
     parser = argparse.ArgumentParser(description='POW client')
     parser.add_argument('-ip', '--ip', help='IP address for the server', required=True)
@@ -36,6 +34,10 @@ if __name__ == "__main__":
     print(port)
     print(ip_address)
     print(pow_type)
+
+    if pow_type == 'merkletree':
+        mt = pow_merkle_tree('/Users/YoDex/PycharmProjects/FileReputation/flamingo.jpg')
+        mt.get_file_portion_pow_signature(10)
 
     # Socket setup
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

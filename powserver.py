@@ -1,7 +1,7 @@
 import argparse
 import socketserver
+import time
 from pow_packets import *
-from example_pow import *
 from pow_merkle_tree import *
 from spow_implementation import *
 
