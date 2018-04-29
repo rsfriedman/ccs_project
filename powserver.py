@@ -65,6 +65,34 @@ class ServerCommandHandler(socketserver.BaseRequestHandler):
                         pow_object.num_challenges_used += 1
                     else:
                         print('Error: Expected challenge file claim response here')
+                elif pow_type == "merkletree":
+
+                    # Do a bulk challenge
+                    cfbcp = ChallengeFileBulkClaimRequest(receivedPacket.file_hash,
+                                                          pow_object.generate_random_challenges())
+                    pow_object.generate_response_tree(cfbcp.file_portion_ids)
+                    sendPowPacket(self.request, cfbcp)
+
+                    receivedPacket = receivePowPacket(self.request)
+                    if receivedPacket.packet_id == ChallengeFileBulkClaimResponse.PacketId:
+
+                        pow_object.reset_metrics()
+                        print(('Bandwidth hashes: %i') % (pow_object.count_nonzero_hashes_recurse(receivedPacket.portion_structure)))
+
+                        # Validate that the file portion signature supplied by the client is equal to
+                        #   the file portion signature we have on record
+                        # if receivedPacket.file_portion_signature != pow_object.get_file_portion_pow_signature(ii):
+                        if not pow_object.validate_portions(receivedPacket.portion_structure):
+                            print('Challenge failed')
+                            clientPassedChallenge = False
+                        else:
+                            print('Challenge portion accepted')
+                    else:
+                        print('Error: Expected challenge file claim response here')
+
+                    # Log the metrics
+                    print(('Server Computation hash count: %i') % (pow_object.hash_count))
+
                 else:
                     # Send a challenge packet for each of the portions the POW scheme will challenge
                     for ii in range(1, pow_object.num_challenge_portions()):

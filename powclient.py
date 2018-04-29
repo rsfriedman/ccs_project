@@ -33,9 +33,9 @@ if __name__ == "__main__":
     print("IP Address: " + ip_address)
     print("Algorithm Run Type: " + pow_type.upper())
 
-    if pow_type == 'merkletree':
-        mt = pow_merkle_tree('/Users/YoDex/PycharmProjects/FileReputation/flamingo.jpg')
-        mt.get_file_portion_pow_signature(10)
+    #if pow_type == 'merkletree':
+        #mt = pow_merkle_tree('/Users/YoDex/PycharmProjects/FileReputation/flamingo.jpg')
+        #mt.get_file_portion_pow_signature(10)
 
     # Socket setup
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -47,14 +47,17 @@ if __name__ == "__main__":
         # File upload sequence
         if args['action'] == 'upload':
 
+            target_file = 'flamingo.jpg'
+            file_size = os.path.getsize(target_file)
+
             #Timer Start
             general_timer_start = time.process_time()
 
             # First, compute the POW data structure for the file
-            test_pow = pow_factory_method(pow_type, '/Users/YoDex/PycharmProjects/FileReputation/flamingo.jpg')
+            test_pow = pow_factory_method(pow_type, target_file)
 
             # Tell the server that you're asserting claim on a file
-            afcp = AssertFileClaimPacket('flamingo.jpg', test_pow.whole_file_hash)
+            afcp = AssertFileClaimPacket(target_file, test_pow.whole_file_hash)
             sendPowPacket(sock, afcp)
 
             # Wait for the server's response.
@@ -75,12 +78,26 @@ if __name__ == "__main__":
             # Enter into the "challenge" loop, where the server will
             #   challenge the client to provide the correct file
             #   portion signatures
-            while receivedPacket.packet_id == ChallengeFileClaimRequest.PacketId:
+            while receivedPacket.packet_id == ChallengeFileClaimRequest.PacketId or receivedPacket.packet_id == ChallengeFileBulkClaimRequest.PacketId:
 
                 if pow_type == "spow":
                     bits = test_pow.computeResponse(receivedPacket.seed)
                     print("Client Bit Count: " + str(len(bits)))
                     cfcr = ChallengeFileClaimResponse(test_pow.whole_file_hash, None, None, bits)
+                elif pow_type == "merkletree":
+                    # Provide the signature for the portion of the file being challenged
+                    cfcr = ChallengeFileBulkClaimResponse(receivedPacket.file_hash, receivedPacket.file_portion_ids,
+                                                           test_pow.generate_response_tree(
+                                                               receivedPacket.file_portion_ids))
+
+                    # Log the metrics
+                    print()
+                    print(('User I/O bits: %i') % (test_pow.byte_io_count * 8))
+                    print(('User Hash Count: %i') % (test_pow.num_hashes_calculated))
+
+                    #print(('Chunk size bytes: %i' % (test_pow.chunk_size)))
+                    #print(('File size bits: %i') % (file_size * 8))
+                    print()
                 else:
                     # Provide the signature for the portion of the file being challenged
                     response_signature = test_pow.get_file_portion_pow_signature(receivedPacket.file_portion_id)

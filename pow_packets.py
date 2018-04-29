@@ -41,6 +41,23 @@ class ChallengeFileClaimRequest(BasePacket):
         self.file_portion_id = file_portion_id
         self.seed = seed
 
+# Packet that the server sends to the client to
+#   request that the client prove ownership of a file
+#   by providing the POW signature of severals
+#   portions of the file.
+class ChallengeFileBulkClaimRequest(BasePacket):
+
+    PacketId = 102
+
+    def __init__(self, file_hash, file_portion_ids):
+
+        BasePacket.__init__(self, self.PacketId)
+
+        self.file_hash = file_hash
+        self.file_portion_ids = file_portion_ids
+
+        print(self.file_portion_ids)
+
 # Packet that the client responds with to prove
 #   that it knows the POW signature of a portion
 #   of a certain file.
@@ -56,6 +73,21 @@ class ChallengeFileClaimResponse(BasePacket):
         self.file_portion_id = file_portion_id
         self.file_portion_signature = file_portion_signature
         self.bits = bits
+
+# Packet that the client responds with to prove
+#   that it knows the POW signature of a portion
+#   of a certain file.
+class ChallengeFileBulkClaimResponse(BasePacket):
+
+    PacketId = 103
+
+    def __init__(self, file_hash, file_portion_ids, file_portion_structure):
+
+        BasePacket.__init__(self, self.PacketId)
+
+        self.file_hash = file_hash
+        self.file_portion_ids = file_portion_ids
+        self.portion_structure = file_portion_structure
 
 # Packet sent by the server to notify that the client
 #   that it is either accepting or rejecting its
