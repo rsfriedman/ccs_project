@@ -56,8 +56,6 @@ class ChallengeFileBulkClaimRequest(BasePacket):
         self.file_hash = file_hash
         self.file_portion_ids = file_portion_ids
 
-        print(self.file_portion_ids)
-
 # Packet that the client responds with to prove
 #   that it knows the POW signature of a portion
 #   of a certain file.
