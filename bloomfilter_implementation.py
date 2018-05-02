@@ -125,7 +125,3 @@ class bloomfilter_implementation:
             bloom_dict[portion_id] = file_portion_hash
             self.num_hashes_calculated = self.num_hashes_calculated + 1
         return bloom_dict
-
-    # def count_hashes(self):
-    #     self.partial_hash_tree_bandwith = 0
-    #     return
