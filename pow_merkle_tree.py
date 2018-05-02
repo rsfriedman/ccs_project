@@ -167,7 +167,7 @@ class pow_merkle_tree:
         #num_challenges = math.ceil(self.get_num_portions() * self.node_challenge_factor)
 
         # Use this to set a constant number of challenges
-        num_challenges = 1
+        num_challenges = 10
 
         return num_challenges
 

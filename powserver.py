@@ -4,12 +4,15 @@ import time
 from pow_packets import *
 from pow_merkle_tree import *
 from spow_implementation import *
+from bloomfilter_implementation import *
 
 def pow_factory_method(pow_string, local_file_path):
     if pow_string == "merkletree":
         return pow_merkle_tree(local_file_path)
     elif pow_string == "spow":
         return spow_implementation(local_file_path, True)
+    elif pow_string == "bloomfilter":
+        return bloomfilter_implementation(local_file_path)
     else:
         print("Error: Unknown POW factory string")
         return None
@@ -32,8 +35,6 @@ class ServerCommandHandler(socketserver.BaseRequestHandler):
             #   the client will also upload it as part of this sequence.
 
             print('Received acp packet')
-            print(receivedPacket.file_name)
-            print(receivedPacket.file_hash)
 
             # @todo This is just a temporary name for now
             local_file_path = 'server_' + receivedPacket.file_name
@@ -92,27 +93,31 @@ class ServerCommandHandler(socketserver.BaseRequestHandler):
 
                     # Log the metrics
                     print(('Server Computation hash count: %i') % (pow_object.hash_count))
+                elif pow_type == "bloomfilter":
+                    # Do a bulk challenge
+                    randomchallenge =  pow_object.generate_random_challenges()
+                    cfbcp = ChallengeFileBulkClaimRequest(receivedPacket.file_hash, randomchallenge)
+                    sendPowPacket(self.request, cfbcp)
 
-                else:
-                    # Send a challenge packet for each of the portions the POW scheme will challenge
-                    for ii in range(1, pow_object.num_challenge_portions()):
+                    receivedPacket = receivePowPacket(self.request)
+                    if receivedPacket.packet_id == ChallengeFileBulkClaimResponse.PacketId:
+                        pow_object.reset_metrics()
+                        print(('Bandwidth hashes: %i') % (len(receivedPacket.portion_structure)))
 
-                        # Request the file signature of portion 'ii' of the file
-                        cfcp = ChallengeFileClaimRequest(assertClaimPacket.file_hash, ii, None)
-                        sendPowPacket(self.request, cfcp)
-
-                        receivedPacket = receivePowPacket(self.request)
-                        if receivedPacket.packet_id == ChallengeFileClaimResponse.PacketId:
-
-                            # Validate that the file portion signature supplied by the client is equal to
-                            #   the file portion signature we have on record
-                            if receivedPacket.file_portion_signature != pow_object.get_file_portion_pow_signature(ii):
-                                print('Challenge failed')
-                                clientPassedChallenge = False
-                            else:
-                                print('Challenge portion accepted')
+                        # Validate that the file portion signature supplied by the client is equal to
+                        #   the file portion signature we have on record
+                        validPortion = pow_object.validate_portions(receivedPacket, pow_object.bloom)
+                        if not validPortion:
+                            print('Challenge failed')
+                            clientPassedChallenge = False
                         else:
-                            print('Error: Expected challenge file claim response here')
+                            print('Challenge portion accepted')
+                    else:
+                        print('Error: Expected challenge file claim response here')
+
+                    # Log the metrics
+                    print(('Server Computation hash count: %i') % (pow_object.hash_count))
+
 
             # Inform the client that the challenge was accepted or rejected
             cfca = ChallengeFileClaimAccepted(receivedPacket.file_hash, clientPassedChallenge, not haveFileAlready)
@@ -138,7 +143,6 @@ class ServerCommandHandler(socketserver.BaseRequestHandler):
                     bytes = f.write(total_file_bytes)
 
                 pow_data = pow_factory_method(pow_type, local_file_path)
-
                 serverFiles[assertClaimPacket.file_hash] = dict()
                 # @todo Different clients may call the same file by a different name.  Need to manage that.
                 serverFiles[assertClaimPacket.file_hash]['file_name'] = assertClaimPacket.file_name

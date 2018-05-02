@@ -4,12 +4,15 @@ import time
 from pow_packets import *
 from spow_implementation import *
 from pow_merkle_tree import *
+from bloomfilter_implementation import *
 
 def pow_factory_method(pow_string, local_file_path):
     if pow_string == "merkletree":
         return pow_merkle_tree(local_file_path)
     elif pow_string == "spow":
         return spow_implementation(local_file_path, False)
+    elif pow_string == "bloomfilter":
+        return bloomfilter_implementation(local_file_path)
     else:
         print("Error: Unknown POW factory string")
         return None
@@ -79,7 +82,6 @@ if __name__ == "__main__":
             #   challenge the client to provide the correct file
             #   portion signatures
             while receivedPacket.packet_id == ChallengeFileClaimRequest.PacketId or receivedPacket.packet_id == ChallengeFileBulkClaimRequest.PacketId:
-
                 if pow_type == "spow":
                     bits = test_pow.computeResponse(receivedPacket.seed)
                     print("Client Bit Count: " + str(len(bits)))
@@ -98,10 +100,14 @@ if __name__ == "__main__":
                     #print(('Chunk size bytes: %i' % (test_pow.chunk_size)))
                     #print(('File size bits: %i') % (file_size * 8))
                     print()
-                else:
-                    # Provide the signature for the portion of the file being challenged
-                    response_signature = test_pow.get_file_portion_pow_signature(receivedPacket.file_portion_id)
-                    cfcr = ChallengeFileClaimResponse(receivedPacket.file_hash, receivedPacket.file_portion_id, response_signature, None)
+                elif pow_type == "bloomfilter":
+                    cfcr = ChallengeFileBulkClaimResponse(receivedPacket.file_hash, receivedPacket.file_portion_ids,
+                                                           test_pow.generate_bloom_response(receivedPacket.file_portion_ids))
+
+                    # Log the metrics
+                    print()
+                    print(('User I/O bits: %i') % (test_pow.byte_io_count * 8))
+                    print(('User Hash Count: %i') % (test_pow.num_hashes_calculated))
 
                 sendPowPacket(sock, cfcr)
 

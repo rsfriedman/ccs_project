@@ -1,25 +1,16 @@
 # JHU EN.605.731 CCS project
 
 ## how to run:
-1) Run `python server.py`
+1) Install pip dependencies:
+      Run `pip install bitarray mmh3`
 
-2) Once Server has started: `python client.py`
+2) Start server:
+      Run `python powserver.py -ip 127.0.0.1 -port 9998 -pow_type {powtype}`
 
-
-# POW example client/server
-1) Start the server first from one command window:
-      `python powserver.py -ip 127.0.0.1 -port 9998`
-      
-2) Run the client once to upload the file (currently hardcoded to flamingo.jpg)
-     `python powclient.py -ip 127.0.0.1 -port 9998 -action upload`
+2) Once Server has started, start client:
+      Run `python powclient.py -ip 127.0.0.1 -port 9998 -action upload -pow_type {powtype}`
 
    If you run it once, it will upload the file, and the server will save it
    as server_flamingo.jpg.  If the client command again, then the server will
    challenge the client to prove ownership over the file, verify it, and
    then skip the upload.
-
-# Bloom Filter example client/server
-1) Install pip dependencies for bloom filter:
-      `pip install bitarray mmh3`
-      
-2) Follow same instructions for POW server, same hardcoded file is provided
